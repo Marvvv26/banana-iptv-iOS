@@ -13,7 +13,7 @@ if (!Array.prototype.flat) {
 const { Xtream, fromGetPhp, b64 } = require('./xtream.js');
 const { search } = require('./search.js');
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 const $ = (s, r) => (r || document).querySelector(s);
 const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
 
@@ -112,7 +112,7 @@ const A = {
   ps: { resume: {}, recentLive: [] }, // positions and recent channels from the player
   epg: new Map(),
   screen: '', prev: null, lastBack: 0,
-  liveCat: '__all', vodCat: { movies: '__all', series: '__all' }, vodSort: { movies: 'added', series: 'added' },
+  liveCat: '__all', vodCat: { movies: '__all', series: '__all' }, liveFilter: '', vodFilter: { movies: '', series: '' }, vodSort: { movies: 'added', series: 'added' },
 };
 // Profiles: each has its own favourites, Continue watching and recently viewed channels.
 // The first profile has id '' so data saved before profiles existed belongs to it.
@@ -484,6 +484,8 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault();
       stopEditing(ae);
       if (ae.id === 'searchInput' && (k === 'enter' || k === 'down')) { runSearch(true); return; }
+      if (ae.id === 'liveFilter' && (k === 'enter' || k === 'down')) { if (liveList.items.length) liveList.enter(); return; }
+      if (ae.id === 'vodFilter' && (k === 'enter' || k === 'down')) { if (vodGrid.items.length) vodGrid.enter(); return; }
       if (k === 'up' || k === 'down') nav(k);
       else if (k === 'enter') nav('down'); // next field
     }
@@ -496,6 +498,8 @@ document.addEventListener('keydown', (e) => {
 function nav(dir) {
   const w = cur && widgetOf(cur);
   if (w && cur.isConnected && w.key(dir)) return;
+  // Up from the top row of films/series goes to Sort and the search box, not past them.
+  if (dir === 'up' && cur && cur.closest && cur.closest('#vodGrid')) { focus($('#vodSort')); return; }
   spatial(dir);
 }
 function handleKey(k) {
@@ -797,12 +801,15 @@ function loadVisibleEpg() {
 function setLiveCat(id, mode) {
   if (id === A.liveCat && !mode && liveList.items.length) return;
   const keepI = mode === 'keep' && id === A.liveCat ? liveList.i : 0;
+  if (id !== A.liveCat) setFilter('live', '');   // a new category starts unfiltered
   A.liveCat = id;
   const c = liveCatItems().find((x) => x.id === id);
   $('#liveCatName').textContent = c ? c.name : '';
-  const list = channelsFor(id);
+  const all = channelsFor(id);
+  const list = A.liveFilter ? search(all, A.liveFilter) : all;
   $('#liveCount').textContent = list.length.toLocaleString();
-  liveList.setItems(list, keepI);
+  liveList.setItems(list, A.liveFilter && mode !== 'keep' ? 0 : keepI);
+  if (A.liveFilter && list.length && A.screen === 'live') showLiveInfo(list[0]);
 }
 function liveCatItems() {
   return [
@@ -845,6 +852,7 @@ const showLiveInfo = (ch) => {
 SCREENS.live = {
   enter() {
     if (!A.live) return;
+    setFilter('live', '');
     const cats = liveCatItems();
     const idx = Math.max(0, cats.findIndex((c) => c.id === A.liveCat));
     liveCatList.setItems(cats, idx);
@@ -964,11 +972,13 @@ const vodGrid = new VGrid($('#vodGrid'), {
 });
 function setVodCat(id, force) {
   if (!force && id === A.vodCat[vodKind] && vodGrid.items.length) return;
+  if (id !== A.vodCat[vodKind]) setFilter('vod', '');   // a new category starts unfiltered
   A.vodCat[vodKind] = id;
   const c = vodCatItems(vodKind).find((x) => x.id === id);
   $('#vodCatName').textContent = c ? c.name : '';
-  const l = vodItems(vodKind, id);
-  $('#vodCount').textContent = l.length.toLocaleString() + (vodKind === 'movies' ? ' movies' : ' series');
+  const q = A.vodFilter[vodKind];
+  const l = q ? search(vodItems(vodKind, id), q) : vodItems(vodKind, id);   // best match first while searching
+  $('#vodCount').textContent = l.length.toLocaleString() + (q ? ' found' : (vodKind === 'movies' ? ' movies' : ' series'));
   vodGrid.setItems(l, 0);
 }
 const SORTS = { added: 'Recently added', az: 'A – Z', rating: 'Top rated' };
@@ -981,6 +991,7 @@ $('#vodSort').addEventListener('click', () => {
 });
 async function enterVod(kind) {
   vodKind = kind;
+  setFilter('vod', '');
   $('#vodKind').textContent = kind === 'movies' ? 'Movies' : 'Series';
   $('#vodSort').textContent = 'Sort: ' + SORTS[A.vodSort[kind]];
   if (!A.vod[kind]) {
@@ -996,6 +1007,15 @@ async function enterVod(kind) {
 SCREENS.movies = { enter() { show('vod'); A.screenNav = 'movies'; navActive('movies'); enterVod('movies'); }, focus: () => (vodGrid.items.length ? vodGrid.enter() : vodCatList.enter()) };
 SCREENS.series = { enter() { show('vod'); A.screenNav = 'series'; navActive('series'); enterVod('series'); }, focus: () => (vodGrid.items.length ? vodGrid.enter() : vodCatList.enter()) };
 SCREENS.vod = { focus: () => (vodGrid.items.length ? vodGrid.enter() : vodCatList.enter()) };
+['#liveFilterWrap', '#vodFilterWrap'].forEach((w) => { $(w).tabIndex = -1; });
+$('#liveFilter').addEventListener('input', debounce(() => {
+  setFilter('live', $('#liveFilter').value.trim());
+  if (A.live) setLiveCat(A.liveCat, 'force');
+}, 250));
+$('#vodFilter').addEventListener('input', debounce(() => {
+  setFilter('vod', $('#vodFilter').value.trim());
+  if (A.vod[vodKind]) setVodCat(A.vodCat[vodKind], true);
+}, 250));
 function navActive(name) { $$('.nav').forEach((b) => b.classList.toggle('active', b.dataset.go === name)); }
 
 // ------------------------------------------------------------------ details
@@ -1186,6 +1206,23 @@ function strip(title, tiles) {
   tiles.forEach((t) => s.appendChild(t));
   row.appendChild(s);
   return row;
+}
+function vsection(title, tiles) {
+  const row = el('div', 'hrow vsec');
+  row.appendChild(el('h3', '', title));
+  const g = el('div', 'sgrid');
+  tiles.forEach((t) => g.appendChild(t));
+  row.appendChild(g);
+  return row;
+}
+// The small search boxes on Live TV, Movies and Series: they narrow the list
+// you're looking at (the current category) as you type.
+function setFilter(where, q) {
+  const input = $(where === 'live' ? '#liveFilter' : '#vodFilter');
+  if (where === 'live') A.liveFilter = q; else A.vodFilter[vodKind] = q;
+  if (input.value !== q) input.value = q;
+  input.closest('.mini-search').classList.toggle('has-text', !!q);
+  input.placeholder = where === 'live' ? 'Search channels' : (vodKind === 'movies' ? 'Search movies' : 'Search series');
 }
 function chanTile(ch, list, i) {
   const t = el('div', 'f tile chan');
@@ -1688,15 +1725,28 @@ const runSearch = debounce(async (moveFocus) => {
   const box = $('#searchRows');
   box.textContent = '';
   if (q.length < 2) return;
-  const ch = search(A.live.list, q, { limit: 30 }); ch.tag = 's';
-  if (ch.length) box.appendChild(strip(`Channels (${ch.length})`, ch.map((c, i) => chanTile(c, ch, i))));
-  for (const kind of ['movies', 'series']) {
-    const v = A.vod[kind] || (await ensureVod(kind, true));
-    if (!v || $('#searchInput').value.trim() !== q) continue;
-    const r = search(v.list, q, { limit: 30 });
-    if (r.length) box.appendChild(strip(`${kind === 'movies' ? 'Movies' : 'Series'} (${r.length})`, r.map((x) => posterTile(x, 's'))));
+  // Results run top to bottom: Channels, then Series, then Movies, each wrapping onto new lines.
+  const summary = el('div', 'muted'); summary.id = 'searchSummary';
+  box.appendChild(summary);
+  const counts = [];
+  const ch = search(A.live.list, q, { limit: 24 }); ch.tag = 's';
+  if (ch.length) { box.appendChild(vsection(`Channels (${ch.length})`, ch.map((c, i) => chanTile(c, ch, i)))); counts.push(`${ch.length} channel${ch.length === 1 ? '' : 's'}`); }
+  for (const kind of ['series', 'movies']) {
+    const name = kind === 'movies' ? 'Movies' : 'Series';
+    let v = A.vod[kind];
+    if (!v) {
+      const wait = el('div', 'home-empty muted', `Looking through ${name.toLowerCase()}…`);
+      box.appendChild(wait);
+      v = await ensureVod(kind, true);
+      wait.remove();
+    }
+    if ($('#searchInput').value.trim() !== q) return;   // they've typed more since
+    if (!v) { box.appendChild(el('div', 'home-empty muted', `Couldn't load ${name.toLowerCase()} from your provider just now.`)); continue; }
+    const r = search(v.list, q, { limit: 36 });
+    if (r.length) { box.appendChild(vsection(`${name} (${r.length})`, r.map((x) => posterTile(x, 's')))); counts.push(`${r.length} ${kind === 'movies' ? (r.length === 1 ? 'movie' : 'movies') : 'series'}`); }
   }
-  if (!box.children.length) box.appendChild(el('div', 'home-empty muted', `Nothing found for “${q}”.`));
+  summary.textContent = counts.length ? 'Found ' + counts.join(' · ') : '';
+  if (!counts.length) box.appendChild(el('div', 'home-empty muted', `Nothing found for “${q}”.`));
   if (moveFocus === true) { const f = $$('.f', box).find(visible); if (f) focus(f); }
 }, 350);
 $('#searchInput').addEventListener('input', () => runSearch());
@@ -1908,6 +1958,7 @@ window.__banana = { A, S, go, focus, get cur() { return cur; }, liveList, liveCa
 const TOUCH = (N.platform && N.platform() === 'ios') || /[?&]touch\b/.test(location.search);
 if (TOUCH) (function touchUi() {
   document.documentElement.classList.add('touch');
+  $('#searchHint').textContent = 'Results update as you type.';
   const back = el('button', 'touch-back', '‹');
   back.setAttribute('aria-label', 'Back');
   document.body.appendChild(back);
@@ -1975,7 +2026,9 @@ if (TOUCH) (function touchUi() {
   // A tap moves the highlight to what was tapped; a drag or hold isn't a tap.
   document.addEventListener('click', (e) => {
     if (Date.now() < suppressUntil) { e.preventDefault(); e.stopPropagation(); return; }
+    if (e.target.tagName === 'INPUT') return;          // typing: leave the keyboard alone
     const f = e.target.closest && e.target.closest('.f');
+    if (f && f.classList.contains('input-wrap')) { startEditing(f); return; }
     if (f && f !== cur && !f.classList.contains('vrow') && !f.classList.contains('card')) focus(f, true);
   }, true);
 })();

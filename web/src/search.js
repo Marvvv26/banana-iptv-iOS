@@ -38,7 +38,7 @@
     return prev[lb];
   }
 
-  const allowedTypos = (len) => (len <= 2 ? 0 : len <= 4 ? 1 : len <= 7 ? 2 : 3);
+  const allowedTypos = (len) => (len <= 3 ? 0 : len <= 5 ? 1 : len <= 9 ? 2 : 3);
 
   function tokenScore(q, t) {
     if (t === q) return 1;
@@ -108,7 +108,10 @@
       if (s > 0) hits.push([s, i, it]);
     }
     hits.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
-    const out = hits.map((h) => h[2]);
+    // When there are good matches, drop the far-fetched ones ("blazing" for "breaking").
+    const best = hits.length ? hits[0][0] : 0;
+    const keep = best >= 1 ? hits.filter((h) => h[0] >= best * 0.6) : hits;
+    const out = keep.map((h) => h[2]);
     return opts.limit ? out.slice(0, opts.limit) : out;
   }
 

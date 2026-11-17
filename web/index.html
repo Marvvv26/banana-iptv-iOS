@@ -32,7 +32,7 @@
     <!-- Live TV: categories | channels with what's on | details -->
     <section id="scr-live" class="scr hidden">
       <div class="col cats"><div class="col-title">Categories</div><div id="liveCats" class="vlist"></div></div>
-      <div class="col chans"><div class="col-title"><span id="liveCatName">All channels</span><span id="liveCount" class="muted"></span></div><div id="liveList" class="vlist"></div></div>
+      <div class="col chans"><div class="col-title with-search"><span id="liveCatName">All channels</span><span id="liveCount" class="muted"></span><span class="sp"></span><div class="f input-wrap mini-search" id="liveFilterWrap"><span class="s-ico">⌕</span><input id="liveFilter" type="text" placeholder="Search" autocomplete="off" autocapitalize="off" spellcheck="false"></div></div><div id="liveList" class="vlist"></div></div>
       <div class="col info" id="liveInfo">
         <div class="li-head"><div id="liLogo" class="logo-box"></div><div><div id="liName" class="li-name"></div><div id="liGroup" class="muted"></div></div></div>
         <div id="liNow" class="li-now"></div>
@@ -47,7 +47,7 @@
     <section id="scr-vod" class="scr hidden">
       <div class="col cats"><div class="col-title" id="vodKind">Movies</div><div id="vodCats" class="vlist"></div></div>
       <div class="col grid-col">
-        <div class="grid-head"><span id="vodCatName" class="h2">All</span><span id="vodCount" class="muted"></span><span class="sp"></span><button id="vodSort" class="f chip">Sort: Recently added</button></div>
+        <div class="grid-head"><span id="vodCatName" class="h2">All</span><span id="vodCount" class="muted"></span><span class="sp"></span><button id="vodSort" class="f chip">Sort: Recently added</button><div class="f input-wrap mini-search" id="vodFilterWrap"><span class="s-ico">⌕</span><input id="vodFilter" type="text" placeholder="Search" autocomplete="off" autocapitalize="off" spellcheck="false"></div></div>
         <div id="vodGrid" class="vgrid"></div>
       </div>
     </section>

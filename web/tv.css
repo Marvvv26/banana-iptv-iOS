@@ -169,6 +169,19 @@ main { flex: 1; position: relative; min-height: 0; }
 .search-box input { flex: 1; background: none; border: 0; outline: none; font-size: 1.8rem; padding: .4rem 0; }
 .s-ico { font-size: 2rem; color: var(--muted); }
 #searchHint { font-size: 1.2rem; margin: 0 .4rem 1rem; }
+/* search results: sections stacked top to bottom, tiles wrap onto new lines */
+.vsec .sgrid { display: flex; flex-wrap: wrap; gap: 1.2rem; padding: 1rem 1.2rem; }
+#searchSummary { font-size: 1.2rem; margin: 0 .4rem; }
+/* the small search box next to Sort (Movies, Series) and in the channel list header (Live TV) */
+.mini-search { display: flex; align-items: center; gap: .5rem; background: var(--panel2); border-radius: 99rem; padding: .3rem 1rem;
+  width: 15rem; text-transform: none; letter-spacing: normal; font-weight: 500; color: var(--text, #fff); }
+.mini-search input { flex: 1; min-width: 0; background: none; border: 0; outline: none; font: inherit; font-size: 1.2rem; color: inherit; padding: .2rem 0; }
+.mini-search .s-ico { color: var(--muted); }
+.mini-search.has-text { box-shadow: inset 0 0 0 .15rem var(--accent, #FB923C); }
+.col-title.with-search { align-items: center; white-space: nowrap; }
+.col-title .mini-search { align-self: center; width: 11rem; flex: none; }
+.col-title #liveCatName { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.grid-head .mini-search { align-self: center; }
 .input-wrap.editing { box-shadow: 0 0 0 .25rem #fff; }
 
 /* settings */
