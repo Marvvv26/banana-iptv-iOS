@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src * data:; connect-src 'self'; font-src 'self'">
+<title>Banana IPTV</title>
+<link rel="stylesheet" href="tv.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><img src="logo.svg" alt="" class="brand-mark"><span>banana</span></div>
+    <nav id="nav" class="pill">
+      <button class="f nav" data-go="home">Home</button>
+      <button class="f nav" data-go="live">Live TV</button>
+      <button class="f nav" data-go="movies">Movies</button>
+      <button class="f nav" data-go="series">Series</button>
+      <button class="f nav" data-go="football">Football</button>
+      <button class="f nav icon" data-go="search" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+      <button class="f nav icon" data-go="settings" aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg></button>
+    </nav>
+    <div class="top-right"><span id="clock"></span><button class="f nav avatar" id="avatarBtn" data-go="profiles" aria-label="Switch profile"></button></div>
+  </header>
+
+  <main>
+    <!-- Home -->
+    <section id="scr-home" class="scr">
+      <div id="homeRows"></div>
+    </section>
+
+    <!-- Live TV: categories | channels with what's on | details -->
+    <section id="scr-live" class="scr hidden">
+      <div class="col cats"><div class="col-title">Categories</div><div id="liveCats" class="vlist"></div></div>
+      <div class="col chans"><div class="col-title"><span id="liveCatName">All channels</span><span id="liveCount" class="muted"></span></div><div id="liveList" class="vlist"></div></div>
+      <div class="col info" id="liveInfo">
+        <div class="li-head"><div id="liLogo" class="logo-box"></div><div><div id="liName" class="li-name"></div><div id="liGroup" class="muted"></div></div></div>
+        <div id="liNow" class="li-now"></div>
+        <div class="bar"><i id="liBar"></i></div>
+        <div id="liDesc" class="li-desc"></div>
+        <div id="liNext" class="li-next"></div>
+        <div class="li-hint muted">Tap to watch  ·  touch and hold for favourite / VLC</div>
+      </div>
+    </section>
+
+    <!-- Movies / Series browse -->
+    <section id="scr-vod" class="scr hidden">
+      <div class="col cats"><div class="col-title" id="vodKind">Movies</div><div id="vodCats" class="vlist"></div></div>
+      <div class="col grid-col">
+        <div class="grid-head"><span id="vodCatName" class="h2">All</span><span id="vodCount" class="muted"></span><span class="sp"></span><button id="vodSort" class="f chip">Sort: Recently added</button></div>
+        <div id="vodGrid" class="vgrid"></div>
+      </div>
+    </section>
+
+    <!-- Film / series details -->
+    <section id="scr-detail" class="scr hidden">
+      <div id="dBackdrop" class="backdrop"></div>
+      <div class="d-wrap">
+        <div id="dPoster" class="d-poster"></div>
+        <div class="d-body">
+          <h1 id="dTitle"></h1>
+          <div id="dMeta" class="d-meta"></div>
+          <div id="dPlot" class="d-plot"></div>
+          <div id="dCredits" class="d-credits muted"></div>
+          <div id="dButtons" class="d-buttons"></div>
+          <div id="dSeasons" class="d-seasons"></div>
+          <div id="dEpisodes" class="vlist eps hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Football hub -->
+    <section id="scr-football" class="scr hidden">
+      <div class="fb-head"><h1>Football</h1><span id="fbStatus" class="muted"></span></div>
+      <div id="fbRows"></div>
+    </section>
+
+    <!-- Who's watching? -->
+    <section id="scr-profiles" class="scr hidden">
+      <div class="prof-wrap">
+        <h1 id="profTitle">Who's watching?</h1>
+        <div id="profList" class="prof-list"></div>
+        <div class="row-btns center"><button id="profManage" class="f btn">Manage profiles</button></div>
+      </div>
+    </section>
+
+    <!-- Edit a profile -->
+    <section id="scr-profedit" class="scr hidden">
+      <div class="setup">
+        <h1 id="peTitle">Edit profile</h1>
+        <label class="f input-wrap field"><span>Name</span><input id="peName" type="text" maxlength="20" autocomplete="off"></label>
+        <div class="opt"><span>Colour</span><div id="peColours" class="seg"></div></div>
+        <div class="opt"><span>Playlist</span><div id="pePlaylists" class="seg"></div></div>
+        <div class="opt"><span>Kids profile</span><div id="peKids" class="seg"></div></div>
+        <p class="muted small-note">A kids profile hides adult categories. Each profile has its own favourites, Continue watching and recently viewed channels.</p>
+        <div class="row-btns"><button id="peSave" class="f btn primary">Save</button><button id="peDelete" class="f btn">Delete profile</button><button id="peCancel" class="f btn">Cancel</button></div>
+      </div>
+    </section>
+
+    <!-- Search -->
+    <section id="scr-search" class="scr hidden">
+      <div class="search-box f input-wrap" id="searchWrap"><span class="s-ico">⌕</span><input id="searchInput" type="text" placeholder="Search channels, movies and series" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div id="searchHint" class="muted">Press OK to type. Results update as you type.</div>
+      <div id="searchRows"></div>
+    </section>
+
+    <!-- Settings -->
+    <section id="scr-settings" class="scr hidden">
+      <div class="col set-nav">
+        <button class="f set-tab" data-pane="playlists">Playlists</button>
+        <button class="f set-tab" data-pane="playback">Playback</button>
+        <button class="f set-tab" data-pane="appearance">Appearance</button>
+        <button class="f set-tab" data-pane="history">History</button>
+        <button class="f set-tab" data-pane="about">About</button>
+      </div>
+      <div class="col set-pane" id="setPane"></div>
+    </section>
+
+    <!-- Add / edit playlist (also the first-run screen) -->
+    <section id="scr-setup" class="scr hidden">
+      <div class="setup">
+        <img src="logo.svg" alt="" class="setup-logo">
+        <h1 id="setupTitle">Add your IPTV login</h1>
+        <p class="muted">Enter the Xtream Codes details from your provider. You can also paste a full get.php link into the server box.</p>
+        <label class="f input-wrap field"><span>Name</span><input id="fName" type="text" placeholder="My IPTV" autocomplete="off"></label>
+        <label class="f input-wrap field"><span>Server</span><input id="fServer" type="url" placeholder="http://example.com:8080" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="f input-wrap field"><span>Username</span><input id="fUser" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+        <label class="f input-wrap field"><span>Password</span><input id="fPass" type="password" autocomplete="off"></label>
+        <div id="fError" class="error"></div>
+        <div class="row-btns"><button id="fSave" class="f btn primary">Save and connect</button><button id="fCancel" class="f btn">Cancel</button></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="splash"><div class="sp-logo"><img src="logo.svg" alt=""></div><div class="sp-word">banana<b>IPTV</b></div><div id="splashText" class="sp-sub">&nbsp;</div></div>
+  <div id="loading" class="hidden"><div class="spin"></div><div id="loadingText">Loading…</div></div>
+  <div id="dialog" class="hidden"><div class="dlg"><h2 id="dlgTitle"></h2><div id="dlgText" class="muted"></div><div id="dlgBtns" class="dlg-btns"></div></div></div>
+  <div id="toast" class="hidden"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

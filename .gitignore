@@ -1,0 +1,8 @@
+build/
+out/
+Pods/
+*.xcodeproj/
+*.xcworkspace/
+Podfile.lock
+node_modules/
+.DS_Store

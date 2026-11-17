@@ -1,0 +1,35 @@
+# XcodeGen spec: the Xcode project is generated from this file on the build machine.
+name: BananaIPTV
+options:
+  bundleIdPrefix: uk.banana
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  BananaIPTV:
+    type: application
+    platform: iOS
+    scheme: {}
+    sources:
+      - path: BananaIPTV
+        excludes: ["bridge.js"]
+      - path: BananaIPTV/bridge.js
+        buildPhase: resources
+      - path: build/web
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: uk.banana.iptv
+        PRODUCT_NAME: BananaIPTV
+        INFOPLIST_FILE: BananaIPTV/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_BITCODE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""

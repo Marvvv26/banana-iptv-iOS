@@ -1,0 +1,64 @@
+name: Security scan
+
+# Static code scanning with Semgrep Community Edition (free for private repos).
+# High-rated findings fail the run; everything else is listed on the run page
+# and in the semgrep-report artifact.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1'   # every Monday, to catch newly added rules
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SEMGREP_VERSION: '1.185.0'
+      RULES_COMMIT: a5ad1714f00c9f7fde980cab0ea1d6dc6d414fd2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Install Semgrep (pinned version)
+        run: pip install --quiet "semgrep==${SEMGREP_VERSION}"
+
+      - name: Get the community rules (pinned commit)
+        run: |
+          R="$RUNNER_TEMP/rules"
+          git clone --quiet --filter=blob:none https://github.com/semgrep/semgrep-rules "$R"
+          git -C "$R" checkout --quiet "$RULES_COMMIT"
+          rm -rf "$R/.github"
+          find "$R" -name '*.test.*' -delete
+          find "$R" -name '*.fixed*' -delete
+
+      - name: Scan
+        run: |
+          R="$RUNNER_TEMP/rules"
+          semgrep scan --metrics=off --sarif --output semgrep.sarif \
+            --config "$R/javascript" \
+            --config "$R/swift" \
+            --config "$R/generic/secrets" \
+            --config "$R/yaml/github-actions" \
+            --exclude build --exclude Pods \
+            .
+
+      - name: Check results
+        run: python3 .github/scripts/semgrep-gate.py semgrep.sarif
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: semgrep-report
+          path: semgrep.sarif
+          if-no-files-found: ignore
+          retention-days: 30

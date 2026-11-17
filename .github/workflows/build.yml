@@ -1,0 +1,55 @@
+name: Build iPhone app
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Bundle the interface
+        run: |
+          mkdir -p build/web
+          npx --yes esbuild@0.25.0 web/src/main.js --bundle --minify --target=safari15 --format=iife --outfile=build/web/app.js
+          cp web/index.html web/tv.css web/logo.svg build/web/
+
+      - name: Generate the Xcode project and fetch VLCKit
+        run: |
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen generate
+          pod install --repo-update
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -workspace BananaIPTV.xcworkspace -scheme BananaIPTV -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -n 80
+
+      - name: Package the .ipa
+        run: |
+          VER=$(grep -m1 'MARKETING_VERSION' project.yml | sed -E 's/.*"(.*)".*/\1/')
+          mkdir -p out/Payload
+          cp -R build/dd/Build/Products/Release-iphoneos/BananaIPTV.app out/Payload/
+          (cd out && zip -qry "BananaIPTV-iOS-$VER-unsigned.ipa" Payload)
+          ls -la out/*.ipa
+
+      - name: Upload the app
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: BananaIPTV-iOS
+          path: out/*.ipa
+          if-no-files-found: error
+          retention-days: 30
