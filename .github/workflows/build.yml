@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # to publish the build under Releases
 
 jobs:
   build:
@@ -53,3 +53,18 @@ jobs:
           path: out/*.ipa
           if-no-files-found: error
           retention-days: 30
+
+      # Also publish the build as a GitHub Release, so the newest one is always
+      # under "Releases" on the repository's front page.
+      - name: Publish to Releases
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VER=$(grep -m1 MARKETING_VERSION project.yml | sed -E 's/.*"(.*)".*/\1/')
+          TAG="v$VER"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" \
+            --title "Banana IPTV for iPhone $TAG" --notes "Built automatically from ${GITHUB_SHA::7}. Download the file below; see the README for what's new."
+          gh release upload "$TAG" out/*.ipa --clobber
+          gh release edit "$TAG" --latest
